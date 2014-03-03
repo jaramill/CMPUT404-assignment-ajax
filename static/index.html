@@ -40,6 +40,7 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
                 if (xhr.status==200) {
                     //XXX: parse some JSON from the request!
                     //XXX: Pass the data to the callback!
+                    callback = JSON.parse(xhr.responseText);
                 }
             } 
             catch(e) {
@@ -50,6 +51,14 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
     //XXX: POST to a URL
     //XXX: set the mimetype and the accept headers!
     // Remember to use application/json !
+    xhr.open(objects["method"] || 'GET', url);
+    if (objects["content-type"]){
+        xhr.overrideMimeType(objects["content-type"]);
+    }
+    if (objects["accept"]){
+	xhr.setRequestHeader('Accept', objects["accept"]);
+    }	
+    xhr.send(objects["body"] || null);
 }
 
 
@@ -136,9 +145,16 @@ function getPosition(e) {
 
 function addEntity(entity, data) {
     world[entity] = data;
-    drawNextFrame(); // (but should we?)
+    //drawNextFrame(); // (but should we?)
+	// No I don't need it I have a check in update: if the world hasn't changed recently I get a special json object -Pablo
     //XXX: Send a XHTML Request that updates the entity you just  modified!
-
+	url = "http://127.0.0.1:5000/entities/" + entity;
+    var objects = {}; 
+	objects["method"]="POST";
+    objects["Content-type"] = "application/json";
+    objects["Accept"] = "application/json";
+	objects["body"]=JSON.stringify(data);	
+    sendJSONXMLHTTPRequest(url, objects, callback);	
 }
 
 var counter = 0;
@@ -262,6 +278,12 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    sendJSONXMLHTTPRequest("http://127.0.0.1:5000/world", {"method":"GET"}, callback);
+	// if I get this json object it means the server hasn't had POSTS recently so there is no need to redraw -Pablo
+	if (callback !== {"redraw":0}){
+		world = callback
+		drawnext();
+	}			
     drawFrame();
 }
 

@@ -22,7 +22,7 @@
 
 
 import flask
-from flask import Flask, request
+from flask import Flask, request, redirect
 import json
 app = Flask(__name__)
 app.debug = True
@@ -54,10 +54,31 @@ class World:
     def world(self):
         return self.space
 
+# I have this class to decide what to give back to GET http://.../world. My idea here is to reduce traffic. If  there haven't been POSTs after the timer has expired, send a special json object so that index.html  doesn't redraw. -Pablo
+
+import time
+
+class Timer:
+    def __init__(self, timeout):
+        self.t0 = time.clock()
+        self.timeout = timeout
+
+    def reset(self):
+        self.t0 = time.clock()
+
+    def expired(self):
+        if time.clock() - self.t0 > self.timeout:
+            return True
+        else:
+            return False    
+
 # you can test your webservice from the commandline
 # curl -v   -H "Content-Type: appication/json" -X PUT http://127.0.0.1:5000/entity/X -d '{"x":1,"y":1}' 
 
-myWorld = World()          
+myWorld = World()
+
+# starting a timer with an expiration time of 1/30 seconds -Pablo
+myTimer = Timer(1/30)          
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
 # this should come with flask but whatever, it's not my project.
@@ -74,27 +95,44 @@ def flask_post_json():
 @app.route("/")
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    # return None
+    return redirect ("http://127.0.0.1:5000/static/index.html", code=302)
+
 
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    return None
+    # return None
+    # reset the timer -Pablo
+    myTimer.reset()
+    v = flask_post_json()
+    myWorld.set(entity, v)
+    e = myWorld.get(entity)
+    return json.dumps( e )
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    # return None
+    # if there have been no recent posts, send a special json object, if not send the world 
+    if myTimer.expired():
+        return json.dumps({"redraw":0})
+    else:
+        return json.dumps(myWorld.world())
+   
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    # return None
+    return json.dumps(myWorld.get(entity))
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
+    myWorld.clear()
     return None
+	
 
 if __name__ == "__main__":
     app.run()
