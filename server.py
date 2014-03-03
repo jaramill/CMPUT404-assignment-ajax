@@ -131,8 +131,8 @@ def get_entity(entity):
 def clear():
     '''Clear the world out!'''
     myWorld.clear()
-    return None
-	
+    # return None
+    return json.dumps(myWorld.world())
 
 if __name__ == "__main__":
     app.run()

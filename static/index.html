@@ -32,7 +32,7 @@ var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 
 
-function sendJSONXMLHTTPRequest(url, objects, callback) {
+function sendJSONXMLHTTPRequestff(url, objects, callback) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function () {
         if (xhr.readyState==4) {
@@ -127,7 +127,7 @@ function drawFrame() {
 // So use this code, it works well on multitouch devices as well.
 
 function getPosition(e) {
-	if ( e.targetTouches && e.targetTouches.length > 0) {
+	if (e.targetTouches && e.targetTouches.length > 0) {
 		var touch = e.targetTouches[0];
 		var x = touch.pageX  - canvas.offsetLeft;
 		var y = touch.pageY  - canvas.offsetTop;
@@ -153,7 +153,8 @@ function addEntity(entity, data) {
 	objects["method"]="POST";
     objects["Content-type"] = "application/json";
     objects["Accept"] = "application/json";
-	objects["body"]=JSON.stringify(data);	
+	objects["body"]=JSON.stringify(data);
+    var callback;	
     sendJSONXMLHTTPRequest(url, objects, callback);	
 }
 
@@ -278,11 +279,12 @@ mouse.mousedraggers.push(function(x,y,clicked,e) {
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    var callback;
     sendJSONXMLHTTPRequest("http://127.0.0.1:5000/world", {"method":"GET"}, callback);
 	// if I get this json object it means the server hasn't had POSTS recently so there is no need to redraw -Pablo
 	if (callback !== {"redraw":0}){
-		world = callback
-		drawnext();
+		world = callback;
+		drawNextFrame();
 	}			
     drawFrame();
 }
